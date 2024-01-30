@@ -1,0 +1,52 @@
+using System.Collections.Generic;
+
+namespace Tetris
+{
+    public abstract class Block
+    {
+        protected abstract Position[][] Tiles { get; } //2умерный массив с содержанием позиций плитки в 4х состояниях вращения
+        protected abstract Position StartOffset { get; } // начально е смещение; блок появляется в сетке 
+        public abstract int Id { get; } // целочисленный идентификатор, для различия блоков
+
+        private int rotationState; // текущее. состояние вращения, смещения
+        private Position offset;
+
+        public Block()
+        {
+            offset = new Position(StartOffset.Row, StartOffset.Column); // установка смещения = начальному смещению
+        }
+        public IEnumerable<Position> TilePositions() // перебирает позиции в текущем состоянии вращения и смещает строку, столбец
+        {
+            foreach (Position p in Tiles[rotationState])
+            {
+                yield return new Position(p.Row + offset.Row, p.Column + offset.Column);
+            }
+        }
+        public void RotateCW()
+        {
+            rotationState = (rotationState + 1) % Tiles.Length; // поворот на 90 по часовой стрелке
+        }
+        public void RotateCCW() // поворот на 90 против часовой
+        {
+            if (rotationState == 0)
+            {
+                rotationState = Tiles.Length - 1;
+            }
+            else
+            {
+                rotationState--;
+            }
+        }
+        public void Move(int rows, int columns) //метод перемещения
+        {
+            offset.Row += rows;
+            offset.Column += columns;
+        }
+        public void Reset() // сброс вращений
+        {
+            rotationState = 0;
+            offset.Row = StartOffset.Row;
+            offset.Column = StartOffset.Column;
+        }
+    }
+}
