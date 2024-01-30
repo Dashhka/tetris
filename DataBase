@@ -1,9 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Data.SqlClient;
 
 namespace Tetris
@@ -11,10 +6,10 @@ namespace Tetris
     class DataBase
     {
         SqlConnection sqlConnection = new SqlConnection(@"Data Source=LAPTOP-IRMBRLFP\SQLEXPRESS;Initial Catalog=tetrismb0;Integrated Security=True");
-        
+
         public void openConnection()
         {
-            if(sqlConnection.State == System.Data.ConnectionState.Closed)
+            if (sqlConnection.State == System.Data.ConnectionState.Closed)
             {
                 sqlConnection.Open();
             }
@@ -32,5 +27,33 @@ namespace Tetris
         {
             return sqlConnection;
         }
+
+        public bool RegisterUser(string username, string password)
+        {
+            openConnection();
+            SqlCommand command = new SqlCommand("INSERT INTO tetriss (login_user, password_user) VALUES (@Username, @Password)", sqlConnection);
+            command.Parameters.AddWithValue("@Username", username);
+            command.Parameters.AddWithValue("@Password", password);
+
+            int result = command.ExecuteNonQuery();
+            closeConnection();
+
+            return result > 0;
+        }
+
+        public bool AuthenticateUser(string username, string password)
+        {
+            openConnection();
+            SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM tetriss WHERE login_user=@Username AND password_user=@Password", sqlConnection);
+            command.Parameters.AddWithValue("@Username", username);
+            command.Parameters.AddWithValue("@Password", password);
+
+            int count = (int)command.ExecuteScalar();
+            closeConnection();
+
+            return count > 0;
+        }
+
+
     }
 }
