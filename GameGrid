@@ -1,0 +1,87 @@
+namespace Tetris
+{
+    public class GameGrid // содержит двумерны прямоугольный массив
+    {
+        private readonly int[,] grid;
+        public int Rows { get; } // строка 
+        public int Columns { get; } // столбец
+
+        public int this[int r, int c] // индексатор для легкого доступа к массиву
+        {
+            get => grid[r, c];
+            set => grid[r, c] = value;
+        }
+        public GameGrid(int rows, int columns) // конструктор принимающий количество строк и столбцов как параметры 
+        {
+            Rows = rows;
+            Columns = columns;
+            grid = new int[rows, columns]; // инициализируем массив
+        }
+
+
+        public bool IsInside(int r, int c) // проверка задано ли значение, все находится внутри сетки
+        {
+            return r >= 0 && r < Rows && c >= 0 && c < Columns;
+        }
+        public bool IsEmpty(int r, int c) // пуста ли данная ячейка
+        {
+            return IsInside(r, c) && grid[r, c] == 0;
+        }
+
+        public bool IsRowFull(int r) // проверка заполнена ли вся строка
+        {
+            for (int c = 0; c < Columns; c++)
+            {
+                if (grid[r, c] == 0)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public bool IsRowEmpty(int r) //пустая ли строка
+        {
+            for (int c = 0; c < Columns; c++)
+            {
+                if (grid[r, c] != 0)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        private void ClearRow(int r) // метод для очистки строки
+        {
+            for (int c = 0; c < Columns; c++)
+            {
+                grid[r, c] = 0;
+            }
+        }
+        private void MoveRowDown(int r, int numRows) // метод для перемещения вниз строк
+        {
+            for (int c = 0; c < Columns; c++)
+            {
+                grid[r + numRows, c] = grid[r, c];
+                grid[r, c] = 0;
+            }
+        }
+        public int ClearFullRows() // метод очистки полных строк
+        {
+            int cleared = 0;
+            for (int r = Rows - 1; r >= 0; r--)
+            {
+                if (IsRowFull(r))
+                {
+                    ClearRow(r);
+                    cleared++;
+                }
+                else if (cleared > 0)
+                {
+                    MoveRowDown(r, cleared);
+                }
+            }
+            return cleared;
+        }
+    }
+}
