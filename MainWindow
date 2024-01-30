@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,10 +20,12 @@ namespace Tetris
     /// </summary>
     public partial class MainWindow : Window
     {
+        private bool isAuthenticatedOrRegistered = false;
+
         private readonly ImageSource[] tileImages = new ImageSource[]
         {
             new BitmapImage(new Uri("Assets/TileEmpty.png", UriKind.Relative)),
-            new BitmapImage(new Uri("Assets/TileCyan.png", UriKind.Relative)),
+            new BitmapImage(new      Uri("Assets/TileCyan.png", UriKind.Relative)),
             new BitmapImage(new Uri("Assets/TileBlue.png", UriKind.Relative)),
             new BitmapImage(new Uri("Assets/TileOrange.png", UriKind.Relative)),
             new BitmapImage(new Uri("Assets/TileYellow.png", UriKind.Relative)),
@@ -50,11 +53,90 @@ namespace Tetris
 
         private GameState gameState = new GameState();
 
+
         public MainWindow()
         {
             InitializeComponent();
             imageControls = SetupGameCanvas(gameState.GameGrid);
+
         }
+
+        private async void GameCanvas_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (isAuthenticatedOrRegistered)
+            {
+                await GameLoop();
+            }
+        }
+        private async void LoginClick(object sender, RoutedEventArgs e)
+        {
+            string username = LoginUsernameTextBox.Text;
+            string password = LoginPasswordTextBox.Password;
+
+            // Создаем экземпляр класса DataBase
+            DataBase database = new DataBase();
+
+            // Проверяем пользователя в базе данных
+            if (database.AuthenticateUser(username, password))
+            {;
+
+                // Установка флага, что пользователь успешно авторизован
+                isAuthenticatedOrRegistered = true;
+                LoginPanel.Visibility = Visibility.Hidden;
+                GameCanvas.Visibility = Visibility.Visible;
+
+                // Начать игру
+                await GameLoop();
+            }
+            else
+            {
+                MessageBox.Show("Неверный логин или пароль.");
+            }
+        }
+
+
+
+        private DataBase db = new DataBase();
+
+        private void RegisterClick(object sender, RoutedEventArgs e)
+        {
+            RegisterPanel.Visibility = Visibility.Visible;
+        }
+
+        private async void LetsGoClick(object sender, RoutedEventArgs e)
+        {
+            string username = RegisterUsernameTextBox.Text;
+            string password = RegisterPasswordTextBox.Password;
+
+            // Проверяем, что введены логин и пароль
+            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                // Вызываем метод RegisterUser для регистрации пользователя в базе данных
+                bool registrationSuccessful = db.RegisterUser(username, password);
+
+                if (registrationSuccessful)
+                {
+
+                    // Установка флага, что пользователь успешно зарегистрирован
+                    isAuthenticatedOrRegistered = true;
+                    RegisterPanel.Visibility = Visibility.Hidden;
+
+                    GameCanvas.Visibility = Visibility.Visible;
+
+                    // Начать игру
+                    await GameLoop();
+                }
+                else
+                {
+                    MessageBox.Show("Ошибка при регистрации.");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Введите логин и пароль.");
+            }
+        }
+
 
         private Image[,] SetupGameCanvas(GameGrid grid)
         {
@@ -158,7 +240,7 @@ namespace Tetris
                 case Key.Right:
                     gameState.MoveBlockRight();
                     break;
-                case Key.Down: 
+                case Key.Down:
                     gameState.MoveBlockDown();
                     break;
                 case Key.Up:
@@ -170,15 +252,10 @@ namespace Tetris
                 case Key.Space:
                     gameState.DropBlock();
                     break;
-                default: 
+                default:
                     return;
             }
             Draw(gameState);
-        }
-
-        private async void GameCanvas_Loaded(object sender, RoutedEventArgs e)
-        {
-            await GameLoop();
         }
 
         private async void PlayAgain_Click(object sender, RoutedEventArgs e)
@@ -186,6 +263,27 @@ namespace Tetris
             gameState = new GameState();
             GameOverMenu.Visibility = Visibility.Hidden;
             await GameLoop();
+        }
+
+        private class RegisterWindow
+        {
+            internal bool? ShowDialog()
+            {
+                throw new NotImplementedException();
+            }
+        }
+    }
+
+    public partial class RegisterWindow : Window
+    {
+        public RegisterWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            throw new NotImplementedException();
         }
     }
 }
