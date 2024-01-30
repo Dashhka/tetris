@@ -1,0 +1,45 @@
+using System;
+using System.Windows.Documents;
+
+namespace Tetris
+{
+    public class BlockQueue
+    {
+        private readonly Block[] blocks = new Block[]
+        {
+            new IBlock(),
+            new JBlock(),
+            new LBlock(),
+            new OBlock(),
+            new SBlock(),
+            new TBlock(),
+            new ZBlock()
+        };
+
+        private readonly Random random = new Random();
+
+        public Block NextBlock { get; private set; }
+
+        public BlockQueue() // конструктор для определения случайного блока
+        {
+            NextBlock = RandomBlock();
+        }
+
+        private Block RandomBlock() // возвращает случайный блок
+        {
+            return blocks[random.Next(blocks.Length)];
+        }
+
+        public Block GetAndUpdate() // возвращает следующий блок и обновляет свойство
+        {
+            Block block = NextBlock;
+
+            do
+            {
+                NextBlock = RandomBlock();
+            }
+            while (block.Id == NextBlock.Id);
+            return block;
+        }
+    }
+}
