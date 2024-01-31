@@ -3,7 +3,7 @@ using System.Data.SqlClient;
 
 namespace Tetris
 {
-    class DataBase
+    public class DataBase
     {
         SqlConnection sqlConnection = new SqlConnection(@"Data Source=LAPTOP-IRMBRLFP\SQLEXPRESS;Initial Catalog=tetrismb0;Integrated Security=True");
 
@@ -47,6 +47,17 @@ namespace Tetris
             SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM tetriss WHERE login_user=@Username AND password_user=@Password", sqlConnection);
             command.Parameters.AddWithValue("@Username", username);
             command.Parameters.AddWithValue("@Password", password);
+
+            int count = (int)command.ExecuteScalar();
+            closeConnection();
+
+            return count > 0;
+        }
+        public bool UserExists(string username)
+        {
+            openConnection();
+            SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM tetriss WHERE login_user=@Username", sqlConnection);
+            command.Parameters.AddWithValue("@Username", username);
 
             int count = (int)command.ExecuteScalar();
             closeConnection();
