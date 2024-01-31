@@ -1,165 +1,290 @@
-<Window x:Class="Tetris.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Tetris"
-        mc:Ignorable="d"
-        Title="Tetris" Height="600" Width="800"
-        MinWidth="600" MinHeight="600"
-        Foreground="White"
-        FontFamily="Segoe UI Light" FontSize="28"
-        KeyDown="Window_KeyDown">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+namespace Tetris
+{
+    /// <summary>
+    /// Логика взаимодействия для MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        private bool isAuthenticatedOrRegistered = false;
 
-        <Grid.Background>
-            <ImageBrush ImageSource="Assets/Background.png"/>
-        </Grid.Background>
+        private readonly ImageSource[] tileImages = new ImageSource[]
+        {
+            new BitmapImage(new Uri("Assets/TileEmpty.png", UriKind.Relative)),
+            new BitmapImage(new      Uri("Assets/TileCyan.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/TileBlue.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/TileOrange.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/TileYellow.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/TileGreen.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/TilePurple.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/TileRed.png", UriKind.Relative))
+        };
 
-        <Viewbox Grid.Row="1"
-                 Grid.Column="1"
-                 Margin="0,0,0,20">
-            <Canvas x:Name="GameCanvas"
-                    Background="#101010"
-                    Width="250"
-                    Height="510"
-                    ClipToBounds="True"
-                    Loaded="GameCanvas_Loaded"/>
-        </Viewbox>
+        private readonly ImageSource[] blockImages = new ImageSource[]
+        {
+            new BitmapImage(new Uri("Assets/Block-Empty.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/Block-I.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/Block-J.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/Block-L.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/Block-O.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/Block-S.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/Block-T.png", UriKind.Relative)),
+            new BitmapImage(new Uri("Assets/Block-Z.png", UriKind.Relative))
+        };
 
-        <TextBlock x:Name="ScoreText"
-                   Grid.Row="0"
-                   Grid.Column="1"
-                   Text="Счёт игры: "
-                   Margin="0, 10"
-                   TextAlignment="Center"/>
+        private readonly Image[,] imageControls;
+        private readonly int maxDelay = 1000;
+        private readonly int minDelay = 75;
+        private readonly int delayDecrease = 25;
 
-        <StackPanel Grid.Row="1"
-                    Grid.Column="2"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Left">
+        private GameState gameState = new GameState();
 
-            <TextBlock Text="Далее: "
-                       TextAlignment="Center"/>
 
-            <Image x:Name="NextImage"
-                   Margin="20"
-                   Width="125"/>
-        </StackPanel>
+        public MainWindow()
+        {
+            InitializeComponent();
+            imageControls = SetupGameCanvas(gameState.GameGrid);
 
-        <Grid x:Name="GameOverMenu"
-              Background="#CC000000"
-              Grid.RowSpan="2"
-              Grid.ColumnSpan="3"
-              Visibility="Hidden">
-            <StackPanel HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
-                <TextBlock Text="Игра окончена"
-                           FontSize="48"
-                           TextAlignment="Center"/>
+        }
 
-                <TextBlock x:Name="FinalScoreText"
-                           Text="Счёт: "
-                           FontSize="36"
-                           TextAlignment="Center"/>
+        private async void GameCanvas_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (isAuthenticatedOrRegistered)
+            {
+                await GameLoop();
+            }
+        }
+        private async void LoginClick(object sender, RoutedEventArgs e)
+        {
+            string username = LoginUsernameTextBox.Text;
+            string password = LoginPasswordTextBox.Password;
 
-                <Button Content="Играть снова"
-                        Background="LightGreen"
-                        Margin="0,20,0,0"
-                        Padding="5"
-                        Click="PlayAgain_Click"/>
-            </StackPanel>
-        </Grid>
+            // Создаем экземпляр класса DataBase
+            DataBase database = new DataBase();
 
-        <Grid x:Name="LoginPanel"
-              Background="#CC000000"
-              Grid.RowSpan="2"
-              Grid.ColumnSpan="3"
-              Visibility="Visible">
-            <StackPanel HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-                <TextBlock Text="Авторизация"
-                   FontSize="24"
-                   TextAlignment="Center"
-                   Foreground="White"/>
+            // Проверяем пользователя в базе данных
+            if (database.AuthenticateUser(username, password))
+            {
+                ;
 
-                <StackPanel Margin="0,10">
-                    <TextBlock Text="Логин:"
-                       Foreground="White"/>
-                    <TextBox x:Name="LoginUsernameTextBox"
-                     Width="200"
-                     Margin="0,5"/>
-                </StackPanel>
+                // Установка флага, что пользователь успешно авторизован
+                isAuthenticatedOrRegistered = true;
+                LoginPanel.Visibility = Visibility.Hidden;
+                GameCanvas.Visibility = Visibility.Visible;
 
-                <StackPanel Margin="0,10">
-                    <TextBlock Text="Пароль:"
-                       Foreground="White"/>
-                    <PasswordBox x:Name="LoginPasswordTextBox"
-                     Width="200"
-                     Margin="0,5"
-                     PasswordChar="●"/>
-                </StackPanel>
+                // Начать игру
+                await GameLoop();
+            }
+            else
+            {
+                MessageBox.Show("Неверный логин или пароль.");
+            }
+        }
 
-                <Button Content="Войти"
-                Background="LightGreen"
-                Margin="0,20,0,0"
-                Padding="5"
-                Click="LoginClick"/>
 
-                <Button Content="Регистрация"
-                Background="LightBlue"
-                Margin="0,10,0,0"
-                Padding="5"
-                Click="RegisterClick"/>
-            </StackPanel>
-        </Grid>
 
-        <Grid x:Name="RegisterPanel"
-              Background="#CC000000"
-              Grid.RowSpan="2"
-              Grid.ColumnSpan="3"
-              Visibility="Hidden">
-            <StackPanel HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-                <TextBlock Text="Регистрация"
-                   FontSize="24"
-                   TextAlignment="Center"
-                   Foreground="White"/>
+        private DataBase db = new DataBase();
 
-                <StackPanel Margin="0,10">
-                    <TextBlock Text="Логин:"
-                       Foreground="White"/>
-                    <TextBox x:Name="RegisterUsernameTextBox"
-                     Width="200"
-                     Margin="0,5"/>
-                </StackPanel>
+        private void RegisterClick(object sender, RoutedEventArgs e)
+        {
+            RegisterPanel.Visibility = Visibility.Visible;
+        }
 
-                <StackPanel Margin="0,10">
-                    <TextBlock Text="Пароль:"
-                       Foreground="White"/>
-                    <PasswordBox x:Name="RegisterPasswordTextBox"
-                     Width="200"
-                     Margin="0,5"
-                     PasswordChar="●"/>
-                </StackPanel>
+        private async void LetsGoClick(object sender, RoutedEventArgs e)
+        {
+            string username = RegisterUsernameTextBox.Text;
+            string password = RegisterPasswordTextBox.Password;
 
-                <Button Content="Начать игру!"
-                Background="LightBlue"
-                Margin="0,10,0,0"
-                Padding="5"
-                Click="LetsGoClick"/>
-            </StackPanel>
-        </Grid>
-        
-    </Grid>
-</Window>
+            // Проверяем, что введены логин и пароль
+            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                // Вызываем метод RegisterUser для регистрации пользователя в базе данных
+                bool registrationSuccessful = db.RegisterUser(username, password);
+
+                if (registrationSuccessful)
+                {
+
+                    // Установка флага, что пользователь успешно зарегистрирован
+                    isAuthenticatedOrRegistered = true;
+                    RegisterPanel.Visibility = Visibility.Hidden;
+
+                    GameCanvas.Visibility = Visibility.Visible;
+
+                    // Начать игру
+                    await GameLoop();
+                }
+                else
+                {
+                    MessageBox.Show("Ошибка при регистрации.");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Введите логин и пароль.");
+            }
+        }
+
+
+        private Image[,] SetupGameCanvas(GameGrid grid)
+        {
+            Image[,] imageControls = new Image[grid.Rows, grid.Columns];
+            int cellSize = 25;
+
+            for (int r = 0; r < grid.Rows; r++)
+            {
+                for (int c = 0; c < grid.Columns; c++)
+                {
+                    Image imageControl = new Image
+                    {
+                        Width = cellSize,
+                        Height = cellSize
+                    };
+
+                    Canvas.SetTop(imageControl, (r - 2) * cellSize + 10);
+                    Canvas.SetLeft(imageControl, c * cellSize);
+                    GameCanvas.Children.Add(imageControl);
+                    imageControls[r, c] = imageControl;
+                }
+            }
+            return imageControls;
+        }
+
+        private void DrawGrid(GameGrid grid)
+        {
+            for (int r = 0; r < grid.Rows; r++)
+            {
+                for (int c = 0; c < grid.Columns; c++)
+                {
+                    int id = grid[r, c];
+                    imageControls[r, c].Opacity = 1;
+                    imageControls[r, c].Source = tileImages[id];
+                }
+            }
+        }
+
+        private void DrawBlock(Block block)
+        {
+            foreach (Position p in block.TilePositions())
+            {
+                imageControls[p.Row, p.Column].Opacity = 1;
+                imageControls[p.Row, p.Column].Source = tileImages[block.Id];
+            }
+        }
+
+        private void DrawNextBlock(BlockQueue blockQueue)
+        {
+            Block next = blockQueue.NextBlock;
+            NextImage.Source = blockImages[next.Id];
+        }
+
+
+        private void DrawGhostBlock(Block block)
+        {
+            int dropDistance = gameState.BlockDropDistance();
+
+            foreach (Position p in block.TilePositions())
+            {
+                imageControls[p.Row + dropDistance, p.Column].Opacity = 0.25;
+                imageControls[p.Row + dropDistance, p.Column].Source = tileImages[block.Id];
+            }
+        }
+
+        private void Draw(GameState gameState)
+        {
+            DrawGrid(gameState.GameGrid);
+            DrawGhostBlock(gameState.CurrentBlock);
+            DrawBlock(gameState.CurrentBlock);
+            DrawNextBlock(gameState.BlockQueue);
+            ScoreText.Text = $"Счёт: {gameState.Score}";
+        }
+
+        private async Task GameLoop()
+        {
+            Draw(gameState);
+
+            while (!gameState.GameOver)
+            {
+                int delay = Math.Max(minDelay, maxDelay - (gameState.Score * delayDecrease));
+                await Task.Delay(delay);
+                gameState.MoveBlockDown();
+                Draw(gameState);
+            }
+            GameOverMenu.Visibility = Visibility.Visible;
+            FinalScoreText.Text = $"Счёт: {gameState.Score}";
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (gameState.GameOver)
+            {
+                return;
+            }
+            switch (e.Key)
+            {
+                case Key.Left:
+                    gameState.MoveBlockLeft();
+                    break;
+                case Key.Right:
+                    gameState.MoveBlockRight();
+                    break;
+                case Key.Down:
+                    gameState.MoveBlockDown();
+                    break;
+                case Key.Up:
+                    gameState.RotateBlockCW();
+                    break;
+                case Key.Z:
+                    gameState.RotateBlockCCW();
+                    break;
+                case Key.Space:
+                    gameState.DropBlock();
+                    break;
+                default:
+                    return;
+            }
+            Draw(gameState);
+        }
+
+        private async void PlayAgain_Click(object sender, RoutedEventArgs e)
+        {
+            gameState = new GameState();
+            GameOverMenu.Visibility = Visibility.Hidden;
+            await GameLoop();
+        }
+
+        private class RegisterWindow
+        {
+            internal bool? ShowDialog()
+            {
+                throw new NotImplementedException();
+            }
+        }
+    }
+
+    public partial class RegisterWindow : Window
+    {
+        public RegisterWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
