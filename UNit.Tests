@@ -1,0 +1,61 @@
+using NUnit.Framework;
+using Tetris;
+
+namespace Tetris.Tests
+{
+    [TestFixture]
+    public class DataBaseTests
+    {
+        private DataBase database;
+
+        [SetUp]
+        public void Setup()
+        {
+            database = new DataBase();
+        }
+
+        [Test]
+        public void RegisterUser_SuccessfulRegistration_ReturnsTrue()
+        {
+            // Arrange
+            string username = "test_user";
+            string password = "test_password";
+
+            // Act
+            bool result = database.RegisterUser(username, password);
+
+            // Assert
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void AuthenticateUser_SuccessfulAuthentication_ReturnsTrue()
+        {
+            // Arrange
+            string username = "test_user";
+            string password = "test_password";
+
+            // Act
+            bool registrationResult = database.RegisterUser(username, password);
+            bool authenticationResult = database.AuthenticateUser(username, password);
+
+            // Assert
+            Assert.IsTrue(registrationResult);
+            Assert.IsTrue(authenticationResult);
+        }
+
+        [Test]
+        public void AuthenticateUser_EmptyUsername_ReturnsFalse()
+        {
+            // Arrange
+            string username = ""; // Empty username
+            string password = "test_password";
+
+            // Act
+            bool result = database.AuthenticateUser(username, password);
+
+            // Assert
+            Assert.IsFalse(result);
+        }
+    }
+}
