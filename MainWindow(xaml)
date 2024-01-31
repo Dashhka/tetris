@@ -112,16 +112,24 @@ namespace Tetris
             // Проверяем, что введены логин и пароль
             if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
             {
+                // Создаем экземпляр класса DataBase
+                DataBase database = new DataBase();
+
+                // Проверяем, существует ли уже пользователь с таким логином
+                if (database.UserExists(username))
+                {
+                    MessageBox.Show("Пользователь с таким логином уже существует.");
+                    return;
+                }
+
                 // Вызываем метод RegisterUser для регистрации пользователя в базе данных
-                bool registrationSuccessful = db.RegisterUser(username, password);
+                bool registrationSuccessful = database.RegisterUser(username, password);
 
                 if (registrationSuccessful)
                 {
-
                     // Установка флага, что пользователь успешно зарегистрирован
                     isAuthenticatedOrRegistered = true;
                     RegisterPanel.Visibility = Visibility.Hidden;
-
                     GameCanvas.Visibility = Visibility.Visible;
 
                     // Начать игру
@@ -137,6 +145,7 @@ namespace Tetris
                 MessageBox.Show("Введите логин и пароль.");
             }
         }
+
 
 
         private Image[,] SetupGameCanvas(GameGrid grid)
